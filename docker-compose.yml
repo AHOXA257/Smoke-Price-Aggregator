@@ -1,0 +1,40 @@
+version: '3.9'
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/1_schema.sql:ro
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/2_seed.sql:ro
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+  backend:
+    build: ./backend
+    env_file: .env
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "${BACKEND_PORT}:8000"
+    volumes:
+      - ./scraper:/app/scraper
+      - ./backend:/app/backend
+  ui:
+    build: ./ui
+    env_file: .env
+    depends_on:
+      - backend
+    ports:
+      - "${UI_PORT}:8501"
+    volumes:
+      - ./ui:/app/ui
+volumes:
+  db_data:
